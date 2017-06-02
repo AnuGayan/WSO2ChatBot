@@ -1,7 +1,7 @@
 {
   "name": "API.AI WSO2App demonstration",
   "description": "API.AI WSO2App demonstration",
-  "repository": "https://github.com/xVir/api-ai-java-webhook",
-  "logo": "http://xvir.github.io/img/apiai.png",
+  "repository": "https://github.com/AnuGayan/WSO2ChatBot.git",
+  "logo": "https://github.com/AnuGayan/WSO2ChatBot/blob/master/apiai.png",
   "keywords": ["api.ai", "natural language"]
 }
