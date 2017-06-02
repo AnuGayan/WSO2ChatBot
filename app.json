@@ -1,0 +1,7 @@
+{
+  "name": "API.AI WSO2App demonstration",
+  "description": "API.AI WSO2App demonstration",
+  "repository": "https://github.com/xVir/api-ai-java-webhook",
+  "logo": "http://xvir.github.io/img/apiai.png",
+  "keywords": ["api.ai", "natural language"]
+}

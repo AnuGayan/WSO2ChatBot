@@ -1,0 +1,5 @@
+org/example/service/webhook.class
+org/example/service/models/Product.class
+org/example/service/Application.class
+org/example/service/utils/CommonLogger.class
+org/example/service/models/CsvDB.class
