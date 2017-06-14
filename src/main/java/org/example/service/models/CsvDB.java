@@ -16,91 +16,169 @@ package org.example.service.models;/*
  * under the License.
  */
 
-import java.io.File;
+import org.example.service.utils.CommonLogger;
+
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Scanner;
+
 
 public class CsvDB {
     private ArrayList<Product> products = new ArrayList<>();
 
 
+    private ArrayList<Product> ProductDB() throws FileNotFoundException, ParseException {
 
-    //    public ArrayList<Product> ProductDB() throws FileNotFoundException, ParseException {
-    public static void main(String[] args) throws FileNotFoundException, ParseException{
-        ArrayList<Product> products = new ArrayList<>();
-        Scanner scan = new Scanner(new File("/home/anusha/Desktop/Data.csv"));
+        products = new ArrayList<>();
+        ClassLoader classLoader = this.getClass().getClassLoader();
+        InputStream is = classLoader.getResourceAsStream("Data.csv");
 
-        while (scan.hasNextLine()){
+        Scanner scan = new Scanner(is);
+
+        while (scan.hasNextLine()) {
             String line = scan.nextLine();
             String[] lineArray = line.split(",");
-            products.add(new Product(lineArray[0],new SimpleDateFormat("dd/MM/yyyy").parse(lineArray[1]),lineArray[2],Integer.parseInt(lineArray[3])));
+            products.add(new Product(lineArray[0], new SimpleDateFormat("dd/MM/yyyy").
+                    parse(lineArray[1]), lineArray[2], Integer.parseInt(lineArray[3])));
         }
         System.out.println(products);
-//        return products;
+        return products;
+    }
+
+    private ArrayList<Product> filteredProductArray(String productName) {
+        ArrayList<Product> inMemoryFilteredProductList = new ArrayList<>();
+        for (Product product : products) {
+            if (productName.equals("DAS")) {
+                if (product.getProductName().equals("WSO2 Complex Event Processing Server") ||
+                        product.getProductName().equals("WSO2 Machine Learner") ||
+                        product.getProductName().equals("WSO2 Data Analytics Server")) {
+                    CommonLogger.log(CsvDB.class, "info", "ProductName - " +
+                            product.getProductName());
+                    inMemoryFilteredProductList.add(product);
+
+
+                }
+            }
+            if (productName.equals("IS")) {
+                if (product.getProductName().equals("WSO2 Identity Server")) {
+                    CommonLogger.log(CsvDB.class, "info", "ProductName - " +
+                            product.getProductName());
+                    inMemoryFilteredProductList.add(product);
+                }
+            }
+            if (productName.equals("IoTM")) {
+                if (product.getProductName().equals("WSO2 IoT Server")) {
+                    CommonLogger.log(CsvDB.class, "info", "ProductName - " +
+                            product.getProductName());
+                    inMemoryFilteredProductList.add(product);
+
+                }
+            }
+            if (productName.equals("Enterprise Integrator")) {
+                if (product.getProductName().equals("WSO2 Enterprise Integrator") ||
+                        product.getProductName().equals("WSO2 Enterprise Service Bus") ||
+                        product.getProductName().equals("WSO2 Message Broker") ||
+                        product.getProductName().equals("WSO2 Application Server") ||
+                        product.getProductName().equals("WSO2 Data Services Server") ||
+                        product.getProductName().equals("WSO2 Business Process Server")) {
+                    CommonLogger.log(CsvDB.class, "info", "ProductName - " +
+                            product.getProductName());
+                    inMemoryFilteredProductList.add(product);
+
+                }
+            }
+            if (productName.equals("All Products")) {
+                if (product.getProductName().equals("WSO2 Enterprise Integrator") ||
+                        product.getProductName().equals("WSO2 Enterprise Service Bus") ||
+                        product.getProductName().equals("WSO2 Message Broker") ||
+                        product.getProductName().equals("WSO2 Application Server") ||
+                        product.getProductName().equals("WSO2 Data Services Server") ||
+                        product.getProductName().equals("WSO2 Business Process Server") ||
+                        product.getProductName().equals("WSO2 Complex Event Processing Server") ||
+                        product.getProductName().equals("WSO2 Machine Learner") ||
+                        product.getProductName().equals("WSO2 Data Analytics Server") ||
+                        product.getProductName().equals("WSO2 Identity Server") ||
+                        product.getProductName().equals("WSO2 IoT Server")) {
+                    CommonLogger.log(CsvDB.class, "info", "ProductName - " +
+                            product.getProductName());
+                    inMemoryFilteredProductList.add(product);
+
+                }
+            }
+        }
+
+        return inMemoryFilteredProductList;
     }
 
 
-    public int count(String productName,String timePeriod){
-        int count=0;
+    public int count(String productName, String from, String to) throws Exception {
+        int count = 0;
+        ArrayList<Product> inMemoryFilteredProductList;
+        ArrayList<Product> inMemoryFilteredFinalList = new ArrayList<>();
+        products = ProductDB();
+        Date dateFrom = new SimpleDateFormat("yyyy-MM-dd").parse(from);
+        Date dateTo = new SimpleDateFormat("yyyy-MM-dd").parse(to);
 
-        if (timePeriod.equals("lastmonth")){
+        CommonLogger.log(CsvDB.class, "info", "ProductName - " + productName +
+                "  time period From - " + dateFrom + "  To - " + dateTo);
 
-        }
-        Iterator<Product> iterator = products.iterator();
-        while (iterator.hasNext()){
-            Product pd = iterator.next();
-//            if (pd.getProductName().equals(productName)&& pd.getPurchesedDate().after())
+        inMemoryFilteredProductList = filteredProductArray(productName);
+        for (Product anInMemoryFilteredProductList : inMemoryFilteredProductList) {
+
+
+            if (anInMemoryFilteredProductList.getPurchesedDate().after(dateFrom) &&
+                    anInMemoryFilteredProductList.getPurchesedDate().before(dateTo)) {
+                inMemoryFilteredFinalList.add(anInMemoryFilteredProductList);
+//                k++;
+            }
+            CommonLogger.log(CsvDB.class, "info", "SelectedFinalCount" + inMemoryFilteredFinalList.size());
+
+            count = inMemoryFilteredFinalList.size();
+
         }
         return count;
     }
+
+    public int count(String productName) throws Exception {
+        int count = 0;
+        ArrayList<Product> inMemoryFilteredProductList;
+        products = ProductDB();
+        CommonLogger.log(CsvDB.class, "info", "ProductName - " + productName);
+
+        inMemoryFilteredProductList = filteredProductArray(productName);
+        count = inMemoryFilteredProductList.size();
+        return count;
+
+    }
 }
 
-class Product{
+class Product {
     private String productName;
     private Date purchesedDate;
     private String customerName;
+    private int productInstance;
 
     public int getProductInstance() {
         return productInstance;
     }
 
-    public void setProductInstance(int productInstance) {
-        this.productInstance = productInstance;
-    }
-
-    private int productInstance;
-
-    public String getProductName() {
+    String getProductName() {
         return productName;
     }
 
-    public void setProductName(String productName) {
-        this.productName = productName;
-    }
-
-    public Date getPurchesedDate() {
+    Date getPurchesedDate() {
         return purchesedDate;
     }
 
-    public void setPurchesedDate(Date purchesedDate) {
-        this.purchesedDate = purchesedDate;
-    }
-
-    public String getCustomerName() {
-        return customerName;
-    }
-
-    public void setCustomerName(String customerName) {
-        this.customerName = customerName;
-    }
-
-    public Product(String productName, Date purchesedDate, String customerName, int productInstance){
+    Product(String productName, Date purchesedDate, String customerName, int productInstance) {
         this.customerName = customerName;
         this.productName = productName;
-        this.purchesedDate=purchesedDate;
-        this.productInstance=productInstance;
+        this.purchesedDate = purchesedDate;
+        this.productInstance = productInstance;
 
 
     }

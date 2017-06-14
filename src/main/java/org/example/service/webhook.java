@@ -16,15 +16,18 @@
 
 package org.example.service;
 
-import ai.api.model.AIResponse;
-import ai.api.model.Fulfillment;
-import ai.api.model.Result;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.example.service.models.CsvDB;
 import org.example.service.utils.CommonLogger;
 
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.HashMap;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 /**
@@ -34,43 +37,304 @@ import java.util.HashMap;
  *
  * @since 0.1-SNAPSHOT
  */
-//@Path("/service")
+
 @Path("/webhook")
 public class webhook {
-    private HashMap payload = new HashMap();
-    private String parameter1;
-    private String parameter2;
-    private String parameter3;
-    private AIResponse response1;
-    Result result;
-    Fulfillment fulfillment;
+
+
+    private CsvDB csvDB = new CsvDB();
+    private String from;
+    private String to;
+    private String timePeriod;
+    private static String name;
+    private int count;
+
+
     @POST
     @Path("/")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Fulfillment post(AIResponse response) {
-        CommonLogger.log(webhook.class,"info","[httpPOST Invoked]");
+    @Produces(MediaType.APPLICATION_JSON)
+    public JsonObject post(JsonObject response) throws Exception {
 
-        if (!response.getResult().isActionIncomplete()){
-            payload = response.getResult().getParameters();
-            String[] keyset = (String[]) payload.keySet().toArray();
-            parameter1= payload.get(keyset[0]).toString();
-            parameter2= payload.get(keyset[1]).toString();
-            parameter3= payload.get(keyset[2]).toString();
+        System.out.println("Post invoke");
+        CommonLogger.log(webhook.class, "info", "[httpPOST Invoked]");
+        System.out.println(response);
+
+        /**
+         *
+         * check whether the intent is complete.
+         *
+         * **/
+        if (!response.get("result").getAsJsonObject().get("actionIncomplete").getAsBoolean()) {
+
+            String productName;
+
+            /**
+             *
+             * Purchase count intent hit
+             *
+             * **/
+            if (response.get("result").getAsJsonObject().get("action").getAsString().equals("purchase.count")) {
+                productName = response.get("result").getAsJsonObject().get("parameters").
+                        getAsJsonObject().get("Products").getAsString();
+                name = productName;
+
+                if (response.get("result").getAsJsonObject().get("parameters").getAsJsonObject().
+                        get("timeperiod").getAsJsonObject().get("date-period") == null) {
+                    if (!response.get("result").getAsJsonObject().get("parameters").getAsJsonObject().
+                            get("timeperiod").getAsJsonObject().get("date").toString().isEmpty()) {
+                        from = response.get("result").getAsJsonObject().get("parameters").getAsJsonObject().
+                                get("timeperiod").getAsJsonObject().get("date").toString();
+                        from = from.substring(1, from.length() - 1);
+                        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        Date date = new Date();
+                        to = dateFormat.format(date);
+                    }
+                } else {
+                    timePeriod = response.get("result").getAsJsonObject().get("parameters").
+                            getAsJsonObject().get("timeperiod").getAsJsonObject().get("date-period").toString();
+                    int iend = timePeriod.indexOf("/");
+                    if (iend != -1) {
+                        from = timePeriod.substring(1, iend);
+                        to = timePeriod.substring(iend + 1, timePeriod.length() - 1);
+                    }
+                }
+
+                CommonLogger.log(CsvDB.class, "info", "ProductName - "
+                        + productName + "  timeperiod - " + timePeriod);
+                count = csvDB.count(productName, from, to);
+                JsonObject object;
+                String payload;
+                if (count == 0) {
+                    payload = "No one has purchase " + productName + " in between " + from + " to " + to;
+                } else {
+                    payload = "Purchase Count of " + productName + " in between" + from + " to " + to + " is " + count;
+                }
+
+                String res = "{\n" +
+                        "\"speech\": \"" + payload + "\",\n" +
+                        "\"displayText\": \"" + payload + "\",\n" +
+                        "\"source\": \"WSO2 inc Database\"}";
+                JsonParser parser = new JsonParser();
+                object = (JsonObject) parser.parse(res);
+
+                return object;
+            }
+            /**
+             *
+             * purchase count follow up
+             *
+             * different product/ different time
+             *
+             * **/
+            else if (response.get("result").getAsJsonObject().get("action").getAsString().
+                    equals("Purchasecount.Purchasecount-diffProduct")) {
+                productName = response.get("result").getAsJsonObject().get("parameters").
+                        getAsJsonObject().get("Products").getAsString();
+                timePeriod = response.get("result").getAsJsonObject().get("parameters").
+                        getAsJsonObject().get("timeperiod").toString();
+
+                /**
+                 *
+                 * different time
+                 *
+                 * **/
+                if (productName.equals("")) {
+                    productName = name;
+                    timePeriod = response.get("result").getAsJsonObject().get("parameters").
+                            getAsJsonObject().get("timeperiod").getAsJsonObject().get("date-period").toString();
+                    int iend = timePeriod.indexOf("/");
+                    if (iend != -1) {
+                        from = timePeriod.substring(1, iend);
+                        to = timePeriod.substring(iend + 1, timePeriod.length() - 1);
+                        count = csvDB.count(productName, from, to);
+                    }
+                }
+
+                /**
+                 *
+                 * different product
+                 *
+                 * **/
+                else if (timePeriod.equals("")) {
+                    count = csvDB.count(productName);
+                }
+
+                JsonObject object;
+                String payload;
+                if (count == 0) {
+                    payload = "No one has purchase " + productName + " in between " + from + " to " + to;
+                } else {
+                    payload = "Purchase Count of " + productName + " in between" + from + " to " + to + " is " + count;
+                }
+
+                String res = "{\n" +
+                        "\"speech\": \"" + payload + "\",\n" +
+                        "\"displayText\": \"" + payload + "\",\n" +
+                        "\"source\": \"WSO2 inc Database\"}";
+                JsonParser parser = new JsonParser();
+                object = (JsonObject) parser.parse(res);
+
+                return object;
+
+            }
+
+            /**
+             *
+             * Purchase count customer followup intent hit
+             *
+             * **/
+
+            else if (response.get("result").getAsJsonObject().get("action").getAsString().
+                    equals("Purchasecount.Purchasecount-customer")) {
+                productName = response.get("result").getAsJsonObject().get("contects").getAsJsonObject().
+                        get("parameters").getAsJsonObject().get("Products").getAsString();
+
+                count = csvDB.count(productName);
+                JsonObject object;
+                String payload;
+                if (count == 0) {
+                    payload = productName + " doesn't have customers ";
+                } else {
+                    payload = productName + " has " + count + " customers";
+                }
+
+                String res = "{\n" +
+                        "\"speech\": \"" + payload + "\",\n" +
+                        "\"displayText\": \"" + payload + "\",\n" +
+                        "\"source\": \"WSO2 inc Database\"}";
+                JsonParser parser = new JsonParser();
+                object = (JsonObject) parser.parse(res);
+
+                return object;
+
+
+            }
+            /**
+             *
+             * Customer count intent hit
+             *
+             * **/
+
+            else if (response.get("result").getAsJsonObject().get("action").getAsString().equals("customer.count")) {
+                productName = response.get("result").getAsJsonObject().get("parameters").
+                        getAsJsonObject().get("Products").getAsString();
+                name = productName;
+                count = csvDB.count(productName);
+                JsonObject object;
+                String payload;
+                if (count == 0) {
+                    payload = productName + " doesn't have customers ";
+                } else {
+                    payload = productName + " has " + count + " customers";
+                }
+
+                String res = "{\n" +
+                        "\"speech\": \"" + payload + "\",\n" +
+                        "\"displayText\": \"" + payload + "\",\n" +
+                        "\"source\": \"WSO2 inc Database\"}";
+                JsonParser parser = new JsonParser();
+                object = (JsonObject) parser.parse(res);
+
+                return object;
+            }
+            /** Customer count follow up intent purchase**/
+            else if (response.get("result").getAsJsonObject().get("action").getAsString()
+                    .equals("CustomerCount.CustomerCount-purchase")) {
+                productName = name;
+                timePeriod = response.get("result").getAsJsonObject().get("parameters").
+                        getAsJsonObject().get("timeperiod").getAsJsonObject().get("date-period").toString();
+                int iend = timePeriod.indexOf("/");
+                if (iend != -1) {
+                    from = timePeriod.substring(1, iend);
+                    to = timePeriod.substring(iend + 1, timePeriod.length() - 1);
+                }
+
+                count = csvDB.count(productName, from, to);
+                JsonObject object;
+                String payload;
+                if (count == 0) {
+                    payload = "No one has purchase " + productName + " in between " + from + " to " + to;
+                } else {
+                    payload = "Purchase Count of " + productName + " in between" + from + " to " + to + " is " + count;
+                }
+
+                String res = "{\n" +
+                        "\"speech\": \"" + payload + "\",\n" +
+                        "\"displayText\": \"" + payload + "\",\n" +
+                        "\"source\": \"WSO2 inc Database\"}";
+                JsonParser parser = new JsonParser();
+                object = (JsonObject) parser.parse(res);
+
+                return object;
+
+            } else if (response.get("result").getAsJsonObject().get("action")
+                    .getAsString().equals("product-purchaseCount")) {
+                productName = response.get("result").getAsJsonObject().get("contexts")
+                        .getAsJsonArray().get(0).getAsJsonObject().get("parameters")
+                        .getAsJsonObject().get("Products").toString();
+                productName = productName.substring(1,productName.length()-1);
+
+                timePeriod = response.get("result").getAsJsonObject().get("parameters").
+                        getAsJsonObject().get("timeperiod").getAsJsonObject().get("date-period").toString();
+                int iend = timePeriod.indexOf("/");
+                if (iend != -1) {
+                    from = timePeriod.substring(1, iend);
+                    to = timePeriod.substring(iend + 1, timePeriod.length() - 1);
+                }
+                count = csvDB.count(productName, from, to);
+                JsonObject object;
+                String payload;
+                if (count == 0) {
+                    payload = "No one has purchase "
+                            + productName + " in between " + from + " to " + to;
+                } else {
+                    payload = "Purchase Count of "
+                            + productName + " in between " + from + " to " + to + " is " + count;
+                }
+
+                String res = "{\n" +
+                        "\"speech\": \"" + payload + "\",\n" +
+                        "\"displayText\": \"" + payload + "\",\n" +
+                        "\"source\": \"WSO2 inc Database\"}";
+
+                JsonParser parser = new JsonParser();
+                object = (JsonObject) parser.parse(res);
+
+                return object;
+
+            }else if (response.get("result").getAsJsonObject().get("action")
+                    .getAsString().equals("product-customers")){
+
+                productName = response.get("result").getAsJsonObject().get("contexts").getAsJsonArray().get(0)
+                        .getAsJsonObject().get("parameters").getAsJsonObject().get("Products").toString();
+                productName = productName.substring(1,productName.length()-1);
+                count = csvDB.count(productName);
+                JsonObject object;
+                String payload;
+                if (count == 0) {
+                    payload = productName + " doesn't have customers ";
+                } else {
+                    payload = productName + " has " + count + " customers";
+                }
+
+                String res = "{\n" +
+                        "\"speech\": \"" + payload + "\",\n" +
+                        "\"displayText\": \"" + payload + "\",\n" +
+                        "\"source\": \"WSO2 inc Database\"}";
+                JsonParser parser = new JsonParser();
+                object = (JsonObject) parser.parse(res);
+
+                return object;
+            }
+            return null;
 
 
         }
-        String res = "";
-        fulfillment.setDisplayText(res);
-
-
-        // TODO: Implementation for HTTP POST request
-        System.out.println("POST invoked");
-        return fulfillment;
+        return null;
     }
-
-    public webhook() {
-
-
-    }
-
 }
+
+
+
+

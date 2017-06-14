@@ -7,10 +7,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="Hello-Service" />
+        <module name="WSO2ChatBot" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="Hello-Service" target="1.8" />
+      <module name="WSO2ChatBot" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
