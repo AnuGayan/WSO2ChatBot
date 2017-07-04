@@ -22,8 +22,10 @@ import com.google.gson.JsonParser;
 import org.example.service.models.CsvDB;
 import org.example.service.utils.CommonLogger;
 
-
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -273,7 +275,7 @@ public class webhook {
                 productName = response.get("result").getAsJsonObject().get("contexts")
                         .getAsJsonArray().get(0).getAsJsonObject().get("parameters")
                         .getAsJsonObject().get("Products").toString();
-                productName = productName.substring(1,productName.length()-1);
+                productName = productName.substring(1, productName.length() - 1);
 
                 timePeriod = response.get("result").getAsJsonObject().get("parameters").
                         getAsJsonObject().get("timeperiod").getAsJsonObject().get("date-period").toString();
@@ -303,12 +305,12 @@ public class webhook {
 
                 return object;
 
-            }else if (response.get("result").getAsJsonObject().get("action")
-                    .getAsString().equals("product-customers")){
+            } else if (response.get("result").getAsJsonObject().get("action")
+                    .getAsString().equals("product-customers")) {
 
                 productName = response.get("result").getAsJsonObject().get("contexts").getAsJsonArray().get(0)
                         .getAsJsonObject().get("parameters").getAsJsonObject().get("Products").toString();
-                productName = productName.substring(1,productName.length()-1);
+                productName = productName.substring(1, productName.length() - 1);
                 count = csvDB.count(productName);
                 JsonObject object;
                 String payload;

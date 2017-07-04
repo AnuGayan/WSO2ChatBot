@@ -70,7 +70,7 @@ public class CsvDB {
                     inMemoryFilteredProductList.add(product);
                 }
             }
-            if (productName.equals("IoTM")) {
+            if (productName.equals("IoT Server")) {
                 if (product.getProductName().equals("WSO2 IoT Server")) {
                     CommonLogger.log(CsvDB.class, "info", "ProductName - " +
                             product.getProductName());
@@ -89,6 +89,13 @@ public class CsvDB {
                             product.getProductName());
                     inMemoryFilteredProductList.add(product);
 
+                }
+            }
+            if (productName.equals("APIM")) {
+                if (product.getProductName().equals("WSO2 API Manager")) {
+                    CommonLogger.log(CsvDB.class, "info", "ProductName - " +
+                            product.getProductName());
+                    inMemoryFilteredProductList.add(product);
                 }
             }
             if (productName.equals("All Products")) {
@@ -159,8 +166,8 @@ public class CsvDB {
 class Product {
     private String productName;
     private Date purchesedDate;
-    private String customerName;
     private int productInstance;
+    private String customerName;
 
     public int getProductInstance() {
         return productInstance;
@@ -172,6 +179,10 @@ class Product {
 
     Date getPurchesedDate() {
         return purchesedDate;
+    }
+
+    String getCustomerName() {
+        return customerName;
     }
 
     Product(String productName, Date purchesedDate, String customerName, int productInstance) {
